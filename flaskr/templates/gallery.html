@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}Home Page{% endblock %}
+{% block styling %}
+    <style>
+        a {
+            text-decoration: none;
+        }
+        .sidebar {
+            margin-top: 100px;
+            margin-left: 30px;
+        }
+
+        .grid-row {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 0 4px;
+        }
+
+        /* Create four equal columns that sits next to each other */
+        .grid-col {
+            flex: 25%;
+            max-width: 25%;
+            padding: 0 4px;
+        }
+
+        .grid-col img {
+            margin-top: 8px;
+            vertical-align: middle;
+            width: 100%;
+        }
+
+        .face-img {
+            width: 100px;
+            height: 100px;
+            z-index: auto;
+            position: relative;
+        }
+
+        .delete_img{
+            position: absolute;
+            z-index: 1;
+            color: grey;
+            font-size: 20px;
+            background-color: transparent;
+            border: 0px;
+        }
+
+        .
+
+        /* Responsive layout - makes a two column-layout instead of four columns */
+        @media screen and (max-width: 800px) {
+            .column {
+                flex: 50%;
+                max-width: 50%;
+            }
+        }
+
+        /* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
+        @media screen and (max-width: 600px) {
+            .column {
+                flex: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <script>
+        $(document).ready(function () {
+            $(".edit").each(function () {
+                var form = $(this).siblings('form')
+                var text = form.children('h3')
+                var input = form.children('input')
+                $(this).click(function () {
+                    text.toggle()
+                    input.toggle()
+
+                });
+            })
+
+            $('.naming').each(function (){
+                $(this).submit(function(event){
+                    var id = $(this).children('input').attr('id')
+                    var name = $(this).children('input').val()
+                    event.preventDefault();
+                    //$.post('/change_name', {id:id, name:name})
+                    var info = {id: id, name: name}
+                    $.ajax({
+                        type: "POST",
+                        datatype: 'json',
+                        url: '/change_name',
+                        data: info,
+                        //contentType: "application/json",
+                        success: function(data){
+                           if(data.success === true){ // if true (1)
+                               setTimeout(function(){// wait for 2 secs(2)
+                                   location.reload(); // then reload the page.(3)
+                              }, 100);
+                           }
+                        }
+                    })
+                    $(this).children('h3').toggle()
+                    $(this).children('input').toggle()
+                })
+
+            })
+
+            $('.cont').each(function (){
+                $(this).submit(function(event){
+                    var id = $(this).children('img').attr('id')
+                    var info = {id:id}
+                    $.ajax({
+                        type: "POST",
+                        datatype: 'json',
+                        url: '/delete_picture',
+                        data: info,
+                        success: function(data){
+                           if(data.success === true){ // if true (1)
+                               setTimeout(function(){// wait for 2 secs(2)
+                                   location.reload(); // then reload the page.(3)
+                              }, 100);
+                           }
+                        }
+                    })
+                })
+            })
+
+        });
+    </script>
+    <div class='text-center' style="margin-top: 100px"><h1>Your Gallery</h1></div>
+    <div class="container-fluid h-100">
+        <div class="row h-100">
+            <div class="fixed-top sidebar">
+                <!-- Navigation links in sidebar-->
+                <h4 class="mb-3">Show by:</h4>
+                <a href="/gallery/faces">Faces</a><br/>
+                <br/>
+                <a href="/gallery/date">Date</a><br/>
+                <br/>
+                <a href="/gallery/country">Country</a><br/>
+                <br/>
+                <a href="/gallery/town">Town</a><br/>
+                <br/>
+            </div>
+            <div class="col-1">
+            </div>
+            <!--Contains the main content
+                    of the webpage-->
+            <div class="col-10 ml-5" style="text-align: justify; margin-top: 80px">
+
+                <div>                <!-- Modal -->
+                    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+                         aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLabel">Upload your pictures</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                </div>
+
+                                <form method=post enctype=multipart/form-data>
+                                    <div class="modal-body">
+                                        <input type='file' name='files[]' multiple="true" autocomplete="off" required>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <input type='submit' value='Upload' class="btn btn-primary">
+                                    </div>
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if present %}
+                    <div class="row grid-row">
+                        {% for key in sorted_keys %}
+                            <div class="container-fluid text-center">
+                                <br>
+                                {% if names_dict %}
+                                    <p class="text-center">
+                                        <img src="data:image/jpeg;base64,{{ names_dict[key][1].decode('utf-8') }}"
+                                             class="img-fluid face-img mx-auto d-block rounded-circle" alt="...">
+                                    </p>
+                                    <div class="container">
+                                        <form class="mb-1 naming">
+                                            <h3 id="{{ key }}">{{ names_dict[key][0] }}</h3>
+                                            <input id="{{ key }}" value="{{ names_dict[key][0] }}" style="display:none">
+                                        </form>
+                                        <a type="button" class="btn btn-danger btn-sm" style="display:inline-block"
+                                           href="/delete_face/{{ key }}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                 fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                                <path fill-rule="evenodd"
+                                                      d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                                            </svg>
+                                        </a>
+                                        <a type="button" class="btn btn-info btn-sm edit" style="display:inline-block">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                 fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                                                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                                            </svg>
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <h4>{{ key }}</h4>
+                                {% endif %}
+                            </div>
+                            {% for col in cat_dict[key] %}
+                                <div class="col-4 mt-4 grid-col">
+                                    {% for img in col %}
+                                        <form class="cont">
+                                            <button type="submit" class="delete_img">
+                                              <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
+                                                  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                                              </svg>
+                                            </button>
+                                            <img src="data:image/jpeg;base64,{{ pictures[img].decode('utf-8') }}"
+                                                 class="img-fluid" alt="..." id="{{ img }}">
+                                        </form>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <h3>No Pictures :(</h3>
+                {% endif %}
+                <div class="col-1"></div>
+
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
