@@ -12,8 +12,10 @@ from flaskr.objects.sexa_to_dec import *
 
 
 class Photo:
-
-    def __init__(self, filepath, name=None):
+    """
+    Create a python object from a jpg file. It reads the metadata and creates attributes based on the ones found.
+    """
+    def __init__(self, filepath):
         self.image = Image.open(filepath)
         self.exif = {}
         if self.image._getexif() is not None:
@@ -34,9 +36,4 @@ class Photo:
         data = io.BytesIO()
         self.image.save(data, 'JPEG')
         self.data = base64.b64encode(data.getvalue())  # Encoded img data
-
-# images = [Photo(f"temp_images/{name}") for name in os.listdir('temp_images')]
-# for img in images:
-#     print(img.exif)
-a = Photo("C:/Users/juani/Downloads/samplepics/IMG-20170217-WA0031.jpg")
 

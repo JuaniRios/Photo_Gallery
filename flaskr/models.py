@@ -2,12 +2,12 @@ from flask_login import LoginManager
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-import uuid
 
 login = LoginManager()
 db = SQLAlchemy()
 
 
+# table to store user credentials
 class UserModel(UserMixin, db.Model):
     __tablename__ = 'users'
 
@@ -23,6 +23,7 @@ class UserModel(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
+# table to store pictures and their metadata.
 class PicturesModel(db.Model):
     __tablename__ = 'pictures'
     id = db.Column(db.Integer, primary_key=True)
@@ -34,17 +35,19 @@ class PicturesModel(db.Model):
     data = db.Column(db.LargeBinary)
 
 
+# table to store each face recognized in a picture.
 class FacesModel(db.Model):
     __tablename__ = 'faces'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # User who uploaded source pic
     user = db.relationship('UserModel', backref=db.backref('faces', lazy=True))
     person_id = db.Column(db.Text())
-    picture_id = db.Column(db.Integer, db.ForeignKey('pictures.id'), nullable=False) # Source picture of the face
+    picture_id = db.Column(db.Integer, db.ForeignKey('pictures.id'), nullable=False)  # Source picture of the face
     picture = db.relationship('PicturesModel')
     data = db.Column(db.LargeBinary)
 
 
+# table to store the name associated with a given person id.
 class NamesModel(db.Model):
     __tablename__ = 'names'
     id = db.Column(db.Integer, primary_key=True)
@@ -52,6 +55,7 @@ class NamesModel(db.Model):
     name = db.Column(db.Text(), default='Unknown')
     person = db.relationship('FacesModel')
     picture = db.Column(db.LargeBinary)
+
 
 @login.user_loader
 def load_user(id):

@@ -15,6 +15,7 @@ def insert_picture_data(photo_list, user_id):
     :param: photo_list as list of Photo objects
     :return: True
     This function takes the Photo objects and adds their attributes to the pictures table.
+    It also scans for faces with the face_recognition module, and adds them to the faces table.
     """
     for photo in photo_list:
         data = photo.data
@@ -44,8 +45,11 @@ def insert_picture_data(photo_list, user_id):
         entry = PicturesModel(user_id=user_id, country=country, town=town, date=date, data=data)
         db.session.add(entry)
         db.session.flush()
+
+        # Load file to face recognition module from binary data
         image = face_recognition.load_image_file(io.BytesIO(base64.b64decode(data)))
 
+        # Scan for face locations and add their coordinates to incoming_faces
         incoming_face_locations = face_recognition.face_locations(image)
         incoming_faces = []
         for face_location in incoming_face_locations:
@@ -53,20 +57,29 @@ def insert_picture_data(photo_list, user_id):
             face = image[top:bottom, left:right]
             incoming_faces.append(face)
 
+        # Encode the face parameters into an array, given the face coordinates in an image
         incoming_face_encodings = face_recognition.face_encodings(image, known_face_locations=incoming_face_locations)
 
+        # Look through all the distinct faces associated with a user, and see if theres any match. If not then add
+        # the face as a new person.
         stored_people = db.session.query(FacesModel.person_id.distinct()).filter_by(user_id=int(user_id)).all()
 
         for i in range(len(incoming_face_encodings)):
+            # Face has to be stored on the database in binary base64
             unknown_face_b64 = base64.b64encode(incoming_face_encodings[i])
+            # look at each person (person_id) in the database and look for a match
             for person_id in stored_people:
                 # get all the faces associated with a certain person_id
                 person_face_list = FacesModel.query.filter_by(user_id=int(user_id), person_id=person_id[
                     0])  # stored_people returns tuple; unpack
+
+                # Face recognition packages uses numpy arrays to compare, so translate base64 binary from the database
+                # to numpy array
                 person_face_list_np = []
                 for person in person_face_list:
                     person_face_list_np.append(np.frombuffer(base64.b64decode(person.data), dtype=np.float64))
 
+                # See if any of the faces associated with a person has a match with the incoming face.
                 results = face_recognition.compare_faces(person_face_list_np, incoming_face_encodings[i])
                 if True in results:
                     # If a match found in the faces associated to a person_id, add the face to db, with that same id
@@ -80,7 +93,7 @@ def insert_picture_data(photo_list, user_id):
             face = FacesModel(user_id=user_id, person_id=rd_id, picture_id=entry.id, data=unknown_face_b64)
             db.session.add(face)
 
-            # Convert face array into base64 jpeg
+            # Convert face array into base64 jpeg and add to database
             img = Image.fromarray(incoming_faces[i])
             img_data = io.BytesIO()
             img.save(img_data, 'JPEG')
@@ -91,10 +104,3 @@ def insert_picture_data(photo_list, user_id):
         db.session.commit()
 
     update_faces(user_id)
-
-# directory = 'C:/Users/juani/Desktop/Semester 2/PhotoGallery/flaskr/temp_images/'
-# photo_list = []
-# for filename in os.listdir(directory):
-#     photo_list.append(Photo(directory+filename))
-# #
-# insert_picture_data(photo_list, 1)
