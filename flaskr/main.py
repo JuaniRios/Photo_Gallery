@@ -5,7 +5,7 @@ from flaskr.objects.get_user_pictures import get_user_pictures
 from flaskr.objects.insert_picture_data import insert_picture_data
 from flaskr.objects.photo import Photo
 from flaskr.objects.merge_faces import merge_faces
-from models import db, UserModel, login, PicturesModel, NamesModel, FacesModel
+from flaskr.models import db, UserModel, login, PicturesModel, NamesModel, FacesModel
 
 # Flask Configurations
 app = Flask(__name__)
