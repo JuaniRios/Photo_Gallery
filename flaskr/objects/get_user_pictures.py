@@ -63,6 +63,9 @@ def get_user_pictures(user_id, category):
     temp = [date.strftime("%A, %B %d, %Y") for date in sorted_dates]
     sorted_dates = temp
     if unknown_date:  # move unknown date category to end of list
+        unkn = date_pretty['Monday, January 01, 0001']
+        date_pretty['Unknown'] = unkn
+        del date_pretty['Monday, January 01, 0001']
         sorted_dates[-1] = 'Unknown'
 
     # Get faces and update faces_dict
